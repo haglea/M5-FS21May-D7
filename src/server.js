@@ -7,7 +7,8 @@ import filesRouter from "./services/files/index.js"
 import { join } from "path"
 
 const server = express();
-const port = 3001;
+const port = process.env.PORT;
+console.log(process.env)
 const publicFolderPath = join(process.cwd(), "public")
 // ***************** MIDDLEWARES *******************************
 
