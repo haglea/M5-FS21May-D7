@@ -52,7 +52,7 @@ authorsRouter.get("/:aID/blogPosts", async (request, response, next) => {
 authorsRouter.post("/", async (request, response, next) => {
     try {
         const authors = await getAuthors()  
-        const author = authors.find((author) => author.email === request.body.email)    
+        const author = authors.find((a) => a.email === request.body.email)    
         if(!author) { // ! turns undefined(false) into true
         const newAuthor = { ...request.body, id: uniqid(), createdAt: new Date()} 
         authors.push(newAuthor)
@@ -71,7 +71,7 @@ authorsRouter.put("/:aID", async (request, response, next) => {
     try {
         const authors = await getAuthors()
         const updatedAuthor = { ...request.body, id: request.params.aID }
-        const remainingAuthors = authors.filter(author => author.id !== request.params.aID)
+        const remainingAuthors = authors.filter(a => a.id !== request.params.aID)
         remainingAuthors.push(updatedAuthor)
 
         await writeAuthors(remainingAuthors)
@@ -85,7 +85,7 @@ authorsRouter.put("/:aID", async (request, response, next) => {
 authorsRouter.delete("/:aID", async (request, response, next) => {
     try {
         const authors = await getAuthors()
-        const remainingAuthors = authors.filter(author => author.id !== request.params.aID)
+        const remainingAuthors = authors.filter(a => a.id !== request.params.aID)
     
         await writeAuthors(remainingAuthors)
         response.status(204).send()

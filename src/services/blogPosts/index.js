@@ -1,4 +1,4 @@
-// ----------------------------- blogPosts CRUD ---------------------
+// ----------------------------- blogPosts + blogPosts comments CRUD ---------------------
 import express from "express"
 /* import fs from "fs"
 import { fileURLToPath } from "url"
@@ -92,6 +92,68 @@ blogPostsRouter.delete("/:blogID", async (request, response, next) => {
         
     await writeBlogPosts(remainingBlogPosts)
     response.status(204).send()
+    } catch (error) {
+        next(error)
+    }
+})
+
+// GET /blogPosts/:id/comments, get all the comments for a specific post
+blogPostsRouter.get("/:blogID/comments", async (request, response, next) => {
+    try {  
+        const blogPosts = await getBlogPosts()
+        const blogPost = blogPosts.find(b => b.id === request.params.blogID)
+
+        response.send(blogPost.comments)
+    } catch (error) {
+        next(error)
+    }
+})
+// POST /blogPosts/:id/comments, add a new comment to the specific post
+blogPostsRouter.post("/:blogID/comments", async (request, response, next) => {
+    try {  
+        const blogPosts = await getBlogPosts()
+        const blogPost = blogPosts.find(b => b.id === request.params.blogID)
+        
+        const comments = blogPost.comments
+        const newComment = { ...request.body, createdAt: new Date()}
+        
+        comments.push(newComment)
+        await writeBlogPosts(blogPosts)
+        response.status(201).send(blogPosts)
+    } catch (error) {
+        next(error)
+    }
+})
+// PUT /blogPosts/:id/comments, edit comments
+blogPostsRouter.put("/:blogID/comments", async (request, response, next) => {
+    try {
+        const blogPosts = await getBlogPosts()
+        const blogPost = blogPosts.find(b => b.id === request.params.blogID)
+        const comments = blogPost.comments
+        const commentName = comments.find(c => c.name === request.body.name)
+        if(!commentName) {
+            response.send(`${request.body.name} has not submitted any comments`)
+        }  else {
+            const updatedComment = { ...request.body, updatedAt: new Date()}         
+            const remainingComments = comments.filter(c => c.name !== request.body.name)
+            remainingComments.push(updatedComment) 
+            blogPost.comments = remainingComments 
+            await writeBlogPosts(blogPosts)
+            response.send(blogPost)
+        }  
+    } catch (error) {
+        next(error)
+    }
+})
+
+// DELETE /blogPosts/:id/comments, delete comments
+blogPostsRouter.delete("/:blogID/comments", async (request, response, next) => {
+    try {
+        const blogPosts = await getBlogPosts()
+        const blogPost = blogPosts.find(b => b.id === request.params.blogID)
+        blogPost.comments = []         
+        await writeBlogPosts(blogPosts)
+        response.send()
     } catch (error) {
         next(error)
     }
