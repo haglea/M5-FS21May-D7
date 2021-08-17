@@ -22,10 +22,18 @@ const anotherLoggerMiddleware = (request, response, next) => {
   }
 
 // GET /blogPosts => returns the list of blogposts
+// GET /blogPosts?title=whatever => filter the blogposts and extract the only that match the condition (es.: title contains "whatever")
 blogPostsRouter.get("/", anotherLoggerMiddleware, async (request, response, next) => {
     try {
         const blogPosts = await getBlogPosts()
+        if (request.query && request.query.category) {
+            const filteredBlogPosts = blogPosts.filter(
+                (b) => b.category === request.query.category
+              );
+        response.send(filteredBlogPosts);
+    } else {
         response.send(blogPosts)
+    }
     } catch (error) {
         next(error)
     }    

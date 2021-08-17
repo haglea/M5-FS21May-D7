@@ -2,7 +2,7 @@
 
 import express from "express"
 import multer from "multer"
-import { getAuthors, writeAuthors, saveAuthorsPicture } from "../../lib/fs-tools.js"
+import { getAuthors, writeAuthors, saveAuthorsPicture, getBlogPosts, writeBlogPosts, saveBlogPostsCover } from "../../lib/fs-tools.js"
 import { extname } from "path"
 
 const filesRouter = express.Router()
@@ -43,5 +43,40 @@ filesRouter.put("/:aID/uploadAvatar", multer().single("avatar"), async (req, res
   }
 })
 
+// PUT /files/:blogPostID/uploadCover
+filesRouter.put("/:blogPostID/uploadCover", multer().single("cover"), async (req, res, next) => {
+  try {
+    console.log(req.file)
+    const blogPosts = await getBlogPosts()
+    const blogPostIndex = blogPosts.findIndex(
+        (b) => b.id === req.params.blogPostID
+      );
+      console.log(blogPostIndex)
+      if (!blogPostIndex == -1) {
+        res
+          .status(404)
+          .send({ message: `Blog post with ${req.params.blogPostID} is not found!` });
+      }
+    const previousBlogPostData = blogPosts[blogPostIndex];
+    const fileName = `${req.params.blogPostID}${extname(req.file.originalname)}`
+    
+    const updatedBlogPost = { 
+        ...previousBlogPostData, 
+        cover: `http://localhost:3001/img/blogposts/${fileName}`, 
+        updatedAt: new Date(), 
+        id: req.params.blogPostID 
+    }
+    blogPosts[blogPostIndex] = updatedBlogPost;
+    await saveBlogPostsCover(fileName, req.file.buffer)    
+    
+    const remainingBlogPosts = blogPosts.filter(b => b.id !== req.params.blogPostID)
+    remainingBlogPosts.push(updatedBlogPost)
+
+    await writeBlogPosts(remainingBlogPosts)    
+    res.send(updatedBlogPost)
+  } catch (error) {
+    next(error)
+  }
+})
 
 export default filesRouter
