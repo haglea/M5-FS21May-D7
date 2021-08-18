@@ -2,18 +2,27 @@
 
 import express from "express"
 import multer from "multer"
-import { getAuthors, writeAuthors, saveAuthorsPicture, getBlogPosts, writeBlogPosts, saveBlogPostsCover } from "../../lib/fs-tools.js"
+import { getAuthors, writeAuthors, getBlogPosts, writeBlogPosts, saveBlogPostsCover } from "../../lib/fs-tools.js"
 import { extname } from "path"
+import { v2 as cloudinary } from "cloudinary"
+import { CloudinaryStorage } from "multer-storage-cloudinary"
+
+const cloudinaryStorage = new CloudinaryStorage({
+  cloudinary, // grabs CLOUDINARY_URL from process.env.CLOUDINARY_URL
+  params: {
+    folder: "authorsavatar",
+  },
+})
 
 const filesRouter = express.Router()
 
 // PUT /files/:aID/uploadAvatar
-filesRouter.put("/:aID/uploadAvatar", multer().single("avatar"), async (req, res, next) => {
+filesRouter.put("/:aID/uploadAvatar", multer({ storage: cloudinaryStorage }).single("avatar"), async (req, res, next) => {
   try {
     console.log(req.file)
     const authors = await getAuthors()
     const authorIndex = authors.findIndex(
-        (author) => author.id === req.params.aID
+        (a) => a.id === req.params.aID
       );
       console.log(authorIndex)
       if (!authorIndex == -1) {
@@ -22,18 +31,18 @@ filesRouter.put("/:aID/uploadAvatar", multer().single("avatar"), async (req, res
           .send({ message: `Author with ${req.params.aID} is not found!` });
       }
     const previousAuthorData = authors[authorIndex];
-    const fileName = `${req.params.aID}${extname(req.file.originalname)}`
+    //const fileName = `${req.params.aID}${extname(req.file.originalname)}`
     
     const updatedAuthor = { 
         ...previousAuthorData, 
-        avatar: `http://localhost:3001/img/authors/${fileName}`, 
+        avatar: req.file.path, 
         updatedAt: new Date(), 
         id: req.params.aID 
     }
     authors[authorIndex] = updatedAuthor;
-    await saveAuthorsPicture(fileName, req.file.buffer)    
+    //await saveAuthorsPicture(fileName, req.file.buffer)    
     
-    const remainingAuthors = authors.filter(author => author.id !== req.params.aID)
+    const remainingAuthors = authors.filter(a => a.id !== req.params.aID)
     remainingAuthors.push(updatedAuthor)
 
     await writeAuthors(remainingAuthors)    
